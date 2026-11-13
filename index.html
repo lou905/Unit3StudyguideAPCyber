@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Networking &amp; Router Security Study Tool</title>
+<style>
+:root{
+  --navy:#14213d; --navy2:#1f3160; --gold:#d4a72c; --gold-soft:#fbf3dc;
+  --bg:#f4f5f8; --card:#ffffff; --ink:#1b1f2a; --muted:#5d6577; --line:#dfe3ea;
+  --good:#1f8a4c; --good-soft:#e5f5ec; --bad:#c0392b; --bad-soft:#fbe9e7;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header .logo{width:40px;height:40px;border-radius:10px;background:var(--gold);color:var(--navy);display:grid;place-items:center;font-weight:800;font-size:20px;flex:none}
+header h1{font-size:18px;margin:0;font-weight:700}
+header p{margin:0;font-size:13px;opacity:.8}
+nav{display:flex;gap:6px;flex-wrap:wrap;background:var(--navy2);padding:8px 14px;position:sticky;top:0;z-index:5}
+nav button{background:transparent;color:#dfe6f5;border:0;padding:8px 12px;border-radius:999px;font-size:14px;cursor:pointer;font-weight:600}
+nav button:hover{background:rgba(255,255,255,.1)}
+nav button.on{background:var(--gold);color:var(--navy)}
+main{max-width:900px;margin:0 auto;padding:22px 16px 60px}
+h2{margin:0 0 6px;font-size:22px;color:var(--navy)}
+.sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:transform .1s,border-color .1s}
+.tile:hover{transform:translateY(-2px);border-color:var(--gold)}
+.tile .ic{font-size:26px}
+.tile h3{margin:8px 0 4px;color:var(--navy);font-size:17px}
+.tile p{margin:0;color:var(--muted);font-size:14px}
+.tile .stat{margin-top:10px;font-size:13px;font-weight:700;color:var(--navy2)}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--navy2)}
+.btn.gold{background:var(--gold);color:var(--navy)}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.btn.good{background:var(--good)} .btn.bad{background:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;font-weight:600;color:var(--muted)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--gold);border-radius:99px;transition:width .3s}
+/* flashcards */
+.flip{perspective:1200px;height:260px;margin:10px 0 16px;cursor:pointer}
+.flip .inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.flip.flipped .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;border:1px solid var(--line)}
+.face.front{background:#fff}
+.face.back{background:var(--navy);color:#fff;transform:rotateY(180deg)}
+.face .term{font-size:28px;font-weight:800;color:var(--navy)}
+.face .def{font-size:18px;max-width:640px}
+.face .tag{position:absolute;top:12px;left:14px;font-size:12px;font-weight:700;color:var(--muted)}
+.face.back .tag{color:var(--gold)}
+.face .hint{position:absolute;bottom:12px;font-size:12px;color:var(--muted)}
+.face.back .hint{color:#aab5d0}
+.known-badge{position:absolute;top:12px;right:14px;font-size:12px;font-weight:700;color:var(--good)}
+/* quiz */
+.q{font-size:19px;font-weight:700;color:var(--navy);margin:6px 0 14px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--navy2)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default;color:var(--ink)}
+.explain{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--gold-soft);border-left:4px solid var(--gold);font-size:15px}
+.big{font-size:44px;font-weight:800;color:var(--navy);margin:4px 0}
+.miss{border-top:1px solid var(--line);padding:10px 0;font-size:14px}
+.miss b{color:var(--navy)}
+/* drill */
+.timer{font-size:28px;font-weight:800;color:var(--navy)}
+.pop{animation:pop .25s}
+@keyframes pop{50%{transform:scale(1.08)}}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+/* order */
+.slots{display:grid;gap:6px;margin:12px 0}
+.slot{border:2px dashed var(--line);border-radius:10px;padding:10px 12px;min-height:44px;display:flex;gap:10px;align-items:center;color:var(--muted)}
+.slot.filled{border-style:solid;border-color:var(--good);background:var(--good-soft);color:var(--ink);font-weight:600}
+.slot .n{width:24px;height:24px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.slot.filled .n{background:var(--good);color:#fff}
+.pool{display:flex;flex-wrap:wrap;gap:8px}
+.pool .opt{width:auto}
+/* prep */
+.prep-item{border-top:1px solid var(--line);padding:14px 0}
+.prep-item:first-child{border-top:0}
+.ans{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--gold-soft);border-left:4px solid var(--gold)}
+.mark{font-size:13px;font-weight:700;margin-left:6px}
+.mark.g{color:var(--good)} .mark.b{color:var(--bad)}
+kbd{background:#eef0f4;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:12px}
+.small{font-size:13px;color:var(--muted)}
+footer{text-align:center;font-size:12px;color:var(--muted);padding:20px}
+@media (max-width:560px){.face .term{font-size:22px}.face .def{font-size:16px}.flip{height:300px}.q{font-size:17px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">L</div>
+  <div>
+    <h1>Networking &amp; Router Security Study Tool</h1>
+    <p>AP Cybersecurity Unit 3 · Cisco NetAcad Module 3</p>
+  </div>
+</header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<footer>Progress saves in this browser. Built from the class study guide.</footer>
+
+<script>
+// ---------------- DATA ----------------
+var SECTIONS = [
+  {id:1, name:"Big picture"},
+  {id:2, name:"Addresses"},
+  {id:3, name:"DHCP & DNS"},
+  {id:4, name:"TCP/IP"},
+  {id:5, name:"Ports"},
+  {id:6, name:"Firewalls & detection"},
+  {id:7, name:"Wi-Fi & routers"},
+  {id:8, name:"Attacks"}
+];
+
+var CARDS = [
+ [1,"ISP","Internet Service Provider: the company that connects you to the internet (Spectrum, Frontier, AT&T). Assigns your home its public IP. “The on-ramp to the highway.”"],
+ [1,"Modem","Converts the ISP's signal (cable, fiber, DSL) into data your network can use. “The translator.”"],
+ [1,"Router","Connects different networks (your LAN to the internet WAN) and decides where packets go. Usually also runs DHCP, NAT and a firewall. “The traffic director.”"],
+ [1,"Switch","Connects devices inside the same network using MAC addresses. “The hallway connecting classrooms.”"],
+ [1,"Access point (AP)","Lets wireless devices join the network over Wi-Fi. “The wireless doorway.”"],
+ [1,"LAN","Local Area Network: devices in one place, like a home or school building."],
+ [1,"WAN","Wide Area Network: networks spread over large distances. The internet is the biggest WAN."],
+ [1,"Packet","A small chunk of data with a header (source, destination, protocol) and a payload. “An envelope with an address.”"],
+ [1,"Home “router”","Usually four devices in one box: router + switch + access point + firewall."],
+ [2,"IPv4 address","32-bit address written as four numbers 0–255 (e.g., 192.168.1.25). About 4.3 billion possible."],
+ [2,"IPv6 address","128-bit address in hexadecimal (e.g., 2001:db8::8a2e:370:7334), created because IPv4 ran out."],
+ [2,"Public IP","The address the internet sees. Assigned by your ISP. Unique worldwide."],
+ [2,"Private IP ranges","Used only inside a LAN, not routable on the internet: 10.x.x.x, 172.16–172.31.x.x, 192.168.x.x"],
+ [2,"Loopback (127.0.0.1)","A device talking to itself."],
+ [2,"Subnet mask","Splits an IP into the network part and host part (e.g., 255.255.255.0 = /24). Same network part = same LAN."],
+ [2,"Default gateway","The router's inside IP (e.g., 192.168.1.1). Where a device sends traffic headed off the LAN."],
+ [2,"MAC address","48-bit hardware address in hex (e.g., 3C:22:FB:9A:10:4E), burned into the network card. Used by switches (Layer 2)."],
+ [2,"ARP","Address Resolution Protocol: finds the MAC address that belongs to an IP on the LAN. “Who has 192.168.1.1?”"],
+ [2,"NAT","Network Address Translation: the router swaps many private IPs for one public IP on the way out, and back on the way in. Saves IPv4 addresses and hides inside devices."],
+ [2,"ipconfig","Windows command that shows your IP, subnet mask and gateway. ipconfig /all also shows MAC and DHCP/DNS servers."],
+ [3,"DHCP","Dynamic Host Configuration Protocol: automatically gives a device its IP address, subnet mask, default gateway and DNS server."],
+ [3,"DORA","The 4 steps of DHCP: Discover → Offer → Request → Acknowledge."],
+ [3,"Static IP","An IP address typed in by hand instead of assigned by DHCP."],
+ [3,"DHCP lease","The IP is loaned for a set time (often 24 hours), then renewed."],
+ [3,"DHCP pool / scope","The range of addresses the router can hand out, like 192.168.1.100–192.168.1.199."],
+ [3,"DHCP reservation","Always gives the same IP to one MAC address (good for printers)."],
+ [3,"APIPA (169.254.x.x)","Self-assigned address a device uses when it could NOT reach a DHCP server. Red flag!"],
+ [3,"Rogue DHCP server","An attacker's fake DHCP server hands out a bad gateway or DNS so traffic flows through the attacker. Defense: DHCP snooping."],
+ [3,"DNS","Domain Name System: the internet's phone book. Turns a name like cambridgechristian.org into an IP address. Uses port 53."],
+ [3,"DNS spoofing / poisoning","Fake DNS answers send you to a malicious look-alike site."],
+ [3,"DNSSEC","Digitally signed DNS answers. The defense against DNS spoofing."],
+ [3,"8.8.8.8 and 1.1.1.1","Common public DNS servers: Google (8.8.8.8) and Cloudflare (1.1.1.1)."],
+ [4,"Protocol","An agreed-upon set of rules for communicating."],
+ [4,"TCP","Transmission Control Protocol: connection-based (handshake first), guaranteed in-order delivery, resends lost packets. Slower. Web, email, downloads, SSH. “Certified mail.”"],
+ [4,"UDP","User Datagram Protocol: connectionless, no guarantee, no resends. Faster. Streaming, gaming, voice calls, DNS, DHCP. “Shouting across the gym.”"],
+ [4,"TCP three-way handshake","SYN (“I want to connect”) → SYN-ACK (“Got it, ready”) → ACK (“Connected”)."],
+ [4,"SYN flood","DoS attack: sends thousands of SYNs and never finishes the handshake, filling up the server so real users can't connect."],
+ [4,"TCP/IP model (4 layers)","4 Application (HTTP, DNS…) · 3 Transport (TCP/UDP, ports) · 2 Internet (IP, routers) · 1 Network Access (Ethernet, Wi-Fi, MAC)."],
+ [4,"OSI model (7 layers)","Bottom to top: Physical, Data Link, Network, Transport, Session, Presentation, Application. “Please Do Not Throw Sausage Pizza Away.”"],
+ [4,"ICMP","Internet-layer protocol used by ping."],
+ [5,"Port number","Gets data to the right program on a device (the IP gets it to the right device). IP = street address, port = room number. Range 0–65,535; 0–1023 are well-known."],
+ [5,"Ports 20, 21","FTP – file transfer (TCP). NOT secure: plain-text passwords. Use SFTP (22)."],
+ [5,"Port 22","SSH / SFTP – encrypted remote login and file transfer (TCP). Secure."],
+ [5,"Port 23","Telnet – remote login (TCP). NOT secure: plain text. Replace with SSH."],
+ [5,"Port 25","SMTP – sending email (TCP). Secured with TLS."],
+ [5,"Port 53","DNS – name-to-IP lookups (UDP, and TCP). Spoofable; DNSSEC helps."],
+ [5,"Ports 67, 68","DHCP – hands out IP addresses (UDP). Watch for rogue servers."],
+ [5,"Port 80","HTTP – web pages (TCP). NOT encrypted."],
+ [5,"Ports 110 / 143","POP3 / IMAP – receiving email (TCP). Use encrypted versions."],
+ [5,"Port 443","HTTPS – encrypted web pages using TLS (TCP). Secure."],
+ [5,"Port 3389","RDP – Windows Remote Desktop (TCP). Risky if open to the internet."],
+ [5,"Insecure → secure swaps","HTTP → HTTPS · Telnet → SSH · FTP → SFTP/FTPS · DNS → DNSSEC"],
+ [5,"Open port","A program is listening and will accept connections. Every open port is a possible way in, so close the ones you don't need."],
+ [5,"Port scanning","Checking which ports are open, often with Nmap. Usually the first step of an attack (reconnaissance)."],
+ [6,"Firewall","Checks traffic against a list of rules and allows or blocks it. The security guard at the network's door."],
+ [6,"Packet-filtering firewall","Looks only at each packet's header: source/destination IP, port, protocol. Fast but simple."],
+ [6,"Stateful inspection firewall","Remembers active connections; lets in replies to traffic you started. Smarter; most home routers."],
+ [6,"Application-layer (proxy) firewall","Reads the actual content (e.g., web requests). Catches more, but slower."],
+ [6,"Next-generation firewall (NGFW)","Stateful + app awareness + intrusion prevention. Most complete."],
+ [6,"Host-based vs network-based firewall","Host-based runs on one device (Windows Defender Firewall). Network-based sits between networks (in the router) and protects everyone behind it."],
+ [6,"ACL","Access Control List: the firewall's rule list. Each rule: action (permit/deny), protocol, source, destination, port."],
+ [6,"ACL rule order","Checked top to bottom; the FIRST match wins. Order matters!"],
+ [6,"Implicit deny","Anything that matches no rule is blocked."],
+ [6,"Default deny / least privilege","Block everything, then allow only what's needed."],
+ [6,"Inbound vs outbound","Inbound = coming into your network. Outbound = leaving it."],
+ [6,"Port forwarding","Router rule that sends outside traffic on one port to one inside device. Opens a hole in the firewall, so use only when needed."],
+ [6,"Network segmentation","Splitting a network into smaller zones so an attacker can't easily move around (lateral movement)."],
+ [6,"Lateral movement","An attacker moving from one compromised device to others on the network."],
+ [6,"VLAN","Virtual LAN: logically separate networks on the same switches (Students / Teachers / Cameras). Traffic between VLANs passes through a router or firewall."],
+ [6,"DMZ","Demilitarized zone: buffer zone for public-facing servers (website, email) between the internet and the internal network."],
+ [6,"Guest network","Visitors get internet but can't see internal devices. A simple form of segmentation."],
+ [6,"Microsegmentation","Very small zones, even down to single servers."],
+ [6,"IDS","Intrusion Detection System: watches traffic and ALERTS. Passive, like a security camera."],
+ [6,"IPS","Intrusion Prevention System: sits inline and BLOCKS bad traffic. Active, like a security guard."],
+ [6,"Signature vs anomaly detection","Signature-based matches known attack patterns. Anomaly-based flags unusual behavior."],
+ [6,"SIEM","Collects logs from many devices in one place, connects the dots, and raises alerts."],
+ [6,"Reading logs: brute force","Many DENIED logins followed by one PERMIT on the same port (like 22/SSH) = likely successful brute-force attack."],
+ [7,"Open Wi-Fi","No protection. Anyone can join and sniff traffic."],
+ [7,"WEP","Broken. Cracked in minutes. Never use."],
+ [7,"WPA (TKIP)","Weak and outdated."],
+ [7,"WPA2 (AES)","Acceptable and most common. Use AES, not TKIP."],
+ [7,"WPA3","Strongest Wi-Fi encryption. Best choice when devices support it."],
+ [7,"Personal (PSK) vs Enterprise","Personal = one shared password (homes). Enterprise = each user logs in with their own account through a RADIUS server (schools, businesses)."],
+ [7,"WPS","Wi-Fi Protected Setup. Disable it: its 8-digit PIN can be brute-forced."],
+ [7,"UPnP","Lets devices open ports on their own. Disable it."],
+ [7,"Remote management","Lets the router's admin page be reached from the internet. Disable it."],
+ [7,"Firmware updates","Patch known router vulnerabilities. Keep firmware updated."],
+ [7,"SSID","The Wi-Fi network name. Rename it so it doesn't reveal the router brand or your name."],
+ [7,"Default admin password","Change it first! “admin/admin” is the first thing attackers try."],
+ [7,"MAC filtering & hidden SSID","Optional extras that are weak on their own: MACs can be spoofed and hidden SSIDs can still be found."],
+ [8,"Packet sniffing","Capturing traffic to read unencrypted data. Defense: encryption (HTTPS, SSH, WPA3)."],
+ [8,"Man-in-the-middle (MitM)","Attacker secretly sits between two devices and reads or changes traffic. Defense: encryption, VPN, certificate checks."],
+ [8,"ARP poisoning / spoofing","Fake ARP replies link the attacker's MAC to the gateway's IP, enabling MitM. Defense: Dynamic ARP Inspection, static ARP entries."],
+ [8,"IP spoofing","Faking the source IP address of packets. Defense: firewall filtering."],
+ [8,"DoS / DDoS","Flooding a target so real users can't connect. DDoS uses a botnet of many devices. Defense: rate limiting, firewalls, IPS, DDoS protection."],
+ [8,"Botnet","A network of many hijacked devices used together, often for DDoS."],
+ [8,"Evil twin","Fake Wi-Fi hotspot with a real-looking name to steal logins. Defense: verify networks, VPN, WPA3/Enterprise."],
+ [8,"Rogue access point","Unauthorized AP plugged into the network. Defense: wireless scans, port security."],
+ [8,"Deauthentication attack","Kicks users off Wi-Fi, often to capture the reconnect handshake and crack the password. Defense: WPA3, 802.11w."],
+ [8,"War driving","Driving around hunting for weak Wi-Fi networks. Defense: strong encryption."],
+ [8,"Jamming","Radio interference blocks Wi-Fi. Defense: physical detection, wired backups."],
+ [8,"Brute force","Trying many passwords. Defense: strong passwords, lockouts, MFA."]
+];
+
+// [section, question, correct, [wrong x3], explanation]
+var QUIZ = [
+ [1,"Which device connects your home network to a different network (like the internet) and decides where packets go?","Router",["Switch","Modem","Access point"],"A router connects different networks. A switch connects devices inside the same network."],
+ [1,"Who assigns your home its public IP address?","Your ISP",["Your router","The DNS server","The switch"],"The ISP (Spectrum, Frontier, AT&T) gives your home its public IP."],
+ [1,"Which device connects devices inside the same network using MAC addresses?","Switch",["Router","Modem","ISP"],"Switches work inside one LAN using MAC addresses, like a hallway connecting classrooms."],
+ [1,"What does a modem do?","Converts the ISP's signal into data your network can use",["Hands out IP addresses","Blocks bad traffic","Translates names into IP addresses"],"The modem is the translator between the ISP's line (cable, fiber, DSL) and your network."],
+ [1,"Most home “routers” are really which devices in one box?","Router + switch + access point + firewall",["Modem + ISP + DNS server","Switch + IDS + SIEM","Router + VPN + botnet"],"That's why your home router can hand out Wi-Fi, connect wired devices and filter traffic."],
+ [2,"Which of these is a private IP address?","10.0.0.15",["8.8.8.8","73.112.45.9","1.1.1.1"],"Private ranges are 10.x.x.x, 172.16–172.31.x.x and 192.168.x.x."],
+ [2,"A device sends traffic that is headed off the LAN to the…","Default gateway",["DNS server","Subnet mask","MAC address"],"The default gateway is the router's inside IP, the exit door from the LAN."],
+ [2,"Which protocol finds the MAC address that belongs to an IP address on the LAN?","ARP",["DNS","DHCP","NAT"],"ARP asks “Who has 192.168.1.1?” and gets back a MAC address."],
+ [2,"Why was IPv6 created?","IPv4 ran out of addresses",["IPv4 was too slow","IPv4 had no encryption","MAC addresses ran out"],"IPv4 has about 4.3 billion addresses. IPv6 is 128 bits, giving vastly more."],
+ [2,"What is 127.0.0.1?","Loopback: a device talking to itself",["The default gateway","Google's DNS server","An APIPA address"],"127.0.0.1 always points back to the same device."],
+ [2,"Which address is burned into the network card and used by switches?","MAC address",["Public IP","Private IP","Subnet mask"],"MAC addresses are 48-bit hardware addresses used at Layer 2."],
+ [2,"30 phones at school reach the internet using one public IP. What makes this possible?","NAT",["DNS","ARP","VLANs"],"NAT swaps many private IPs for one public IP on the way out, and back on the way in."],
+ [2,"What does a subnet mask do?","Splits an IP into the network part and the host part",["Hides the device's MAC address","Encrypts the IP address","Assigns a public IP"],"Devices with the same network part are on the same LAN. 255.255.255.0 = /24."],
+ [3,"A laptop shows the IP address 169.254.12.40. What most likely went wrong?","It couldn't reach a DHCP server",["Its DNS was poisoned","Someone gave it a static IP","It joined the guest network"],"169.254.x.x is APIPA, a self-assigned address used when DHCP fails."],
+ [3,"What are the four DHCP steps in order?","Discover, Offer, Request, Acknowledge",["Request, Offer, Discover, Acknowledge","Discover, Request, Offer, Acknowledge","Offer, Discover, Acknowledge, Request"],"Remember DORA."],
+ [3,"A school wants its printer to always get the same IP from DHCP. What should it set up?","A DHCP reservation",["A shorter DHCP lease","APIPA","Port forwarding"],"A reservation ties one IP to one MAC address."],
+ [3,"What does DNS do?","Turns domain names into IP addresses",["Hands out IP addresses","Encrypts web traffic","Connects devices using MAC addresses"],"DNS is the internet's phone book. DHCP is the one that hands out addresses."],
+ [3,"Which defense digitally signs DNS answers to stop DNS spoofing?","DNSSEC",["DHCP snooping","WPA3","NAT"],"DNSSEC signs DNS answers so fake ones can be detected."],
+ [3,"An attacker's fake server hands out a bad gateway so traffic flows through the attacker. What is this?","Rogue DHCP server",["Evil twin","SYN flood","War driving"],"Defense: DHCP snooping on switches."],
+ [3,"Which four settings does DHCP give a device?","IP address, subnet mask, default gateway, DNS server",["IP address, MAC address, SSID, Wi-Fi password","Public IP, port number, firewall rules, VLAN","MAC address, ARP table, lease, NAT"],"Without DHCP you'd type all four by hand (a static IP)."],
+ [3,"A student types google.com and lands on a fake look-alike site even though the URL looks right. Which protocol was most likely attacked?","DNS",["DHCP","ARP","SMTP"],"DNS spoofing/poisoning returns a fake IP for a real name."],
+ [4,"Which protocol guarantees delivery and resends lost packets?","TCP",["UDP","ICMP","ARP"],"TCP is like certified mail with a signature."],
+ [4,"Online games and video calls usually use UDP instead of TCP. Why?","It's faster; a dropped packet matters less than a delay",["It's encrypted","It guarantees delivery","It uses MAC addresses instead of IPs"],"UDP skips the handshake and resends, so it's quicker."],
+ [4,"What are the three steps of the TCP handshake?","SYN, SYN-ACK, ACK",["ACK, SYN, SYN-ACK","SYN, ACK, FIN","Discover, Offer, Acknowledge"],"Client SYN, server SYN-ACK, client ACK."],
+ [4,"An attacker sends thousands of SYNs and never finishes the handshake. What attack is this?","SYN flood",["ARP poisoning","Port scanning","Evil twin"],"A SYN flood is a protocol DoS attack."],
+ [4,"Which TCP/IP layer uses port numbers and TCP/UDP?","Transport",["Application","Internet","Network Access"],"Layer 3 of the TCP/IP model: Transport."],
+ [4,"Which TCP/IP layer routes packets between networks using IP addresses?","Internet",["Transport","Application","Network Access"],"Routers and IP live at the Internet layer."],
+ [4,"Ping uses which protocol?","ICMP",["TCP","DHCP","SMTP"],"ICMP works at the Internet layer."],
+ [5,"What does a port number do?","Gets data to the right program on a device",["Gets data to the right device","Encrypts the data","Names the Wi-Fi network"],"IP = the building's street address; port = the room number."],
+ [5,"Which port does HTTPS use?","443",["80","22","53"],"HTTPS = 443, HTTP = 80."],
+ [5,"Which port and protocol should replace Telnet on port 23?","SSH on port 22",["FTP on port 21","HTTP on port 80","RDP on port 3389"],"SSH is encrypted; Telnet sends everything in plain text."],
+ [5,"Why is FTP (ports 20/21) considered insecure?","It sends passwords in plain text",["It's too slow","It uses UDP","It blocks DNS"],"Use SFTP (port 22) instead."],
+ [5,"Checking which ports are open, often with Nmap, is called…","Port scanning",["Port forwarding","DNS spoofing","NAT"],"Port scanning is usually the reconnaissance step before an attack."],
+ [5,"Which port is Windows Remote Desktop, risky if open to the internet?","3389",["443","25","110"],"RDP = 3389."],
+ [5,"Which port does DNS use?","53",["67","25","80"],"DNS = 53 (mostly UDP)."],
+ [6,"A firewall ACL lists “Permit any any” as rule 1 and “Deny TCP any any 23” as rule 2. Is Telnet blocked?","No, rule 1 matches first and permits it",["Yes, deny rules always win","Yes, because of implicit deny","Only inbound Telnet is blocked"],"Rules are checked top to bottom and the first match wins."],
+ [6,"Traffic that matches no rule in an ACL is…","Blocked by implicit deny",["Allowed","Logged and allowed","Sent to the DMZ"],"Implicit deny blocks anything not explicitly permitted."],
+ [6,"Which firewall type remembers active connections and lets in replies to traffic you started?","Stateful inspection",["Packet filtering","Host-based","Application-layer proxy"],"Most home routers use stateful inspection."],
+ [6,"Windows Defender Firewall is an example of a…","Host-based firewall",["Network-based firewall","Next-generation firewall","IDS"],"It runs on one device and protects that device."],
+ [6,"Which system watches traffic and only alerts?","IDS",["IPS","Firewall","VLAN"],"IDS = detect and alert (passive). IPS = block (active)."],
+ [6,"A school wants student laptops, teacher computers and cameras kept apart on the same switches. What should it use?","VLANs",["Port forwarding","NAT","DHCP reservations"],"VLANs create separate logical networks on shared switches."],
+ [6,"Where should a school's public-facing web server go?","In a DMZ",["On the student VLAN","On the guest network","On the teacher VLAN"],"A DMZ is the buffer zone between the internet and the internal network."],
+ [6,"Which tool collects logs from many devices in one place and raises alerts?","SIEM",["IPS","VLAN","DHCP"],"A SIEM connects the dots across many logs."],
+ [6,"A log shows 400 denied logins to port 22 from one outside IP, then one permitted login. What happened?","A likely successful brute-force attack on SSH",["A normal user forgot their password","A DDoS attack","DNS spoofing"],"Many denies followed by one permit on the same port is the classic brute-force pattern."],
+ [6,"Signature-based detection works by…","Matching known attack patterns",["Flagging unusual behavior","Blocking all inbound traffic","Encrypting packets"],"Anomaly-based is the one that flags unusual behavior."],
+ [6,"What is the main security benefit of network segmentation?","It limits lateral movement",["It makes Wi-Fi faster","It saves public IP addresses","It replaces passwords"],"An attacker who gets into one zone can't easily reach the rest."],
+ [6,"A router rule that sends outside traffic on one port to one inside device is called…","Port forwarding",["A VLAN","A DHCP reservation","A DMZ"],"It opens a hole in the firewall, so only use it when needed."],
+ [6,"What is the best-practice firewall approach?","Default deny: block everything, then allow only what's needed",["Default allow: permit everything, then block bad sites","Put the deny rules at the very bottom","Open all well-known ports"],"This is the principle of least privilege."],
+ [7,"Which Wi-Fi encryption is strongest?","WPA3",["WPA2 (TKIP)","WEP","WPA"],"Order from weakest: Open, WEP, WPA, WPA2 (AES), WPA3."],
+ [7,"Why should WPS be turned off on a router?","Its 8-digit PIN can be brute-forced",["It slows down Wi-Fi","It hides the SSID","It disables the firewall"],"A cracked WPS PIN gives attackers the Wi-Fi password."],
+ [7,"Which router feature lets devices open ports on their own and should be disabled?","UPnP",["WPS","DHCP","NAT"],"UPnP can open holes in the firewall without you knowing."],
+ [7,"A school where each user logs in with their own account through a RADIUS server is using…","WPA2/WPA3 Enterprise",["WPA2 Personal (PSK)","WEP","Open Wi-Fi"],"Personal = one shared password. Enterprise = individual logins."],
+ [7,"Why are MAC filtering and hiding the SSID weak on their own?","MACs can be spoofed and hidden SSIDs can still be found",["They make Wi-Fi slower","They only work with WEP","They turn off encryption"],"They're optional extras, not real protection."],
+ [7,"What's the FIRST setting to change on a brand-new router?","The default admin username and password",["The Wi-Fi channel","The DHCP lease time","The router's LED brightness"],"“admin/admin” is the first thing attackers try."],
+ [7,"Why disable remote management on a router?","So the admin page can't be reached from the internet",["To speed up DHCP","To enable WPA3","To hide the SSID"],"Remote management exposes the router's settings page to outsiders."],
+ [8,"An attacker sets up a hotspot named “CCS-Guest” in the parking lot. What attack is this?","Evil twin",["Rogue access point","Jamming","War driving"],"An evil twin copies a real-looking network name to steal logins."],
+ [8,"Fake ARP replies link the attacker's MAC to the gateway's IP. What attack is this?","ARP poisoning",["IP spoofing","DNS spoofing","Deauthentication"],"ARP poisoning enables a man-in-the-middle attack."],
+ [8,"What is the best defense against packet sniffing?","Encryption (HTTPS, SSH, WPA3)",["MAC filtering","Hiding the SSID","Port forwarding"],"Sniffed traffic is useless if it's encrypted."],
+ [8,"How is a DDoS different from a DoS?","A DDoS uses a botnet of many devices",["A DDoS only targets DNS","A DDoS is always encrypted","A DDoS uses one powerful computer"],"Distributed = many attacking devices at once."],
+ [8,"Which attack kicks users off Wi-Fi to capture the reconnect handshake and crack the password?","Deauthentication attack",["Jamming","Evil twin","War driving"],"Defense: WPA3 and 802.11w management frame protection."],
+ [8,"An employee plugs an unauthorized wireless AP into the school network. This is a…","Rogue access point",["Evil twin","Botnet","DMZ"],"Defense: wireless scans and port security."],
+ [8,"Driving around looking for weak Wi-Fi networks is called…","War driving",["Jamming","Phishing","Port scanning"],"Defense: strong encryption."],
+ [8,"Which defense stops a rogue DHCP server?","DHCP snooping on switches",["DNSSEC","WPA3","NAT"],"DHCP snooping only trusts DHCP replies from approved ports."],
+ [8,"Which set of defenses best stops brute-force attacks?","Strong passwords, account lockouts, MFA",["Port forwarding and UPnP","Hiding the SSID","Using UDP instead of TCP"],"Lockouts and MFA make guessing passwords useless."],
+ [8,"An attacker secretly sits between two devices and reads or changes their traffic. What is this?","Man-in-the-middle (MitM)",["SYN flood","War driving","Jamming"],"Defense: encryption, VPNs and certificate checks."]
+];
+
+var PORTS = [
+ {p:"20, 21", n:"FTP", d:"file transfer", tu:"TCP", sec:false, rep:"SFTP (22)"},
+ {p:"22", n:"SSH / SFTP", d:"encrypted remote login & file transfer", tu:"TCP", sec:true},
+ {p:"23", n:"Telnet", d:"remote login (plain text)", tu:"TCP", sec:false, rep:"SSH (22)"},
+ {p:"25", n:"SMTP", d:"sending email", tu:"TCP"},
+ {p:"53", n:"DNS", d:"name-to-IP lookups", tu:"UDP (and TCP)"},
+ {p:"67, 68", n:"DHCP", d:"handing out IP addresses", tu:"UDP"},
+ {p:"80", n:"HTTP", d:"web pages (not encrypted)", tu:"TCP", sec:false, rep:"HTTPS (443)"},
+ {p:"110", n:"POP3", d:"receiving email", tu:"TCP"},
+ {p:"143", n:"IMAP", d:"receiving email", tu:"TCP"},
+ {p:"443", n:"HTTPS", d:"encrypted web pages (TLS)", tu:"TCP", sec:true},
+ {p:"3389", n:"RDP", d:"Windows Remote Desktop", tu:"TCP"}
+];
+
+var ORDERS = [
+ {id:"dora", name:"DHCP: DORA", prompt:"Put the DHCP steps in order.", items:["Discover: device broadcasts “Is there a DHCP server?”","Offer: server offers an available IP","Request: device asks to use that IP","Acknowledge: server confirms the lease"]},
+ {id:"hs", name:"TCP handshake", prompt:"Put the TCP three-way handshake in order.", items:["SYN: “I want to connect”","SYN-ACK: “Got it, ready”","ACK: “Connected”"]},
+ {id:"path", name:"Path to the internet", prompt:"Put the path your data takes in order.", items:["Your device","Router","Modem","ISP","The internet"]},
+ {id:"osi", name:"OSI model", prompt:"Put the 7 OSI layers in order from the BOTTOM (1) to the TOP (7). Hint: Please Do Not Throw Sausage Pizza Away.", items:["Physical","Data Link","Network","Transport","Session","Presentation","Application"]},
+ {id:"tcpip", name:"TCP/IP model", prompt:"Put the 4 TCP/IP layers in order from the BOTTOM (1) to the TOP (4).", items:["Network Access","Internet","Transport","Application"]},
+ {id:"wifi", name:"Wi-Fi encryption", prompt:"Order Wi-Fi security from WEAKEST to STRONGEST.", items:["Open","WEP","WPA (TKIP)","WPA2 (AES)","WPA3"]},
+ {id:"dns", name:"DNS lookup", prompt:"Put the steps of a DNS lookup in order.", items:["You type a web address","Your device checks its own cache","It asks the DNS server set by DHCP","That server asks root → .org → the site's server and returns the IP"]}
+];
+
+var PREP = [
+ ["A laptop shows the IP address 169.254.12.40. What most likely went wrong?","It couldn't reach a DHCP server, so it assigned itself an <b>APIPA</b> address."],
+ ["Put the DHCP process in order: Request, Offer, Acknowledge, Discover.","<b>Discover → Offer → Request → Acknowledge</b> (DORA)."],
+ ["Which of these is a private IP address: 8.8.8.8, 192.168.4.20, or 73.15.200.1?","<b>192.168.4.20</b> (the 192.168.x.x range is private)."],
+ ["What does NAT allow a home router to do?","Let many devices with private IPs share <b>one public IP</b> from the ISP."],
+ ["A student types <i>google.com</i> and lands on a fake look-alike site even though the URL looks right. Which protocol was most likely attacked?","<b>DNS</b> (DNS spoofing / poisoning)."],
+ ["Online games and video calls usually use UDP instead of TCP. Why?","UDP is <b>faster</b>; a dropped packet matters less than a delay."],
+ ["What are the three steps of the TCP handshake?","<b>SYN, SYN-ACK, ACK.</b>"],
+ ["Which port and protocol should replace Telnet on port 23?","<b>SSH on port 22</b> (encrypted)."],
+ ["A firewall ACL lists “Permit any any” as rule 1 and “Deny TCP any any 23” as rule 2. Will Telnet be blocked? Why or why not?","<b>No.</b> Rules are read top to bottom and the first match wins; “permit any” matches first."],
+ ["What is the difference between an IDS and an IPS?","An IDS <b>detects and alerts</b> (passive). An IPS sits inline and <b>blocks</b> (active)."],
+ ["Why should WPS be turned off on a home router?","Its 8-digit <b>PIN can be brute-forced</b>, giving attackers the Wi-Fi password."],
+ ["A school wants student laptops, teacher computers and security cameras kept apart on the same switches. What should it use?","<b>VLANs</b> (network segmentation)."],
+ ["A log shows 400 denied login attempts to port 22 from one outside IP, then one permitted login. What happened?","A likely <b>successful brute-force attack</b> on SSH."],
+ ["Name three settings you should change on a brand-new router.","Any three: default admin password, WPA3/WPA2-AES encryption, disable WPS, update firmware, disable remote management, disable UPnP, rename SSID, add a guest network."],
+ ["An attacker sets up a hotspot named “CCS-Guest” in the parking lot. What attack is this?","An <b>evil twin</b> attack."]
+];
+
+// ---------------- STATE ----------------
+var KEY = "ccsNetStudyV1";
+var S = {known:{}, missed:{}, bestQuiz:null, bestDrill:0, orders:{}, prep:{}};
+try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); for (var k in o) S[k] = o[k]; } } catch(e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+var view = "home";
+var secFilter = {}; SECTIONS.forEach(function(s){ secFilter[s.id] = true; });
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function secName(id){ for (var i=0;i<SECTIONS.length;i++) if (SECTIONS[i].id===id) return SECTIONS[i].name; return ""; }
+function pct(a,b){ return b ? Math.round(a*100/b) : 0; }
+
+var TABS = [["home","Home"],["cards","Flashcards"],["quiz","Practice Quiz"],["ports","Port Drill"],["order","Put It In Order"],["prep","Test Prep"]];
+function renderNav(){
+  $("nav").innerHTML = TABS.map(function(t){ return '<button data-v="'+t[0]+'" class="'+(view===t[0]?"on":"")+'">'+t[1]+'</button>'; }).join("");
+  Array.prototype.forEach.call($("nav").querySelectorAll("button"), function(b){ b.onclick = function(){ go(b.getAttribute("data-v")); }; });
+}
+function go(v){
+  view = v;
+  try { if (location.hash !== "#"+v) history.replaceState(null,"","#"+v); } catch(e) {}
+  renderNav();
+  document.onkeydown = null;
+  ({home:renderHome, cards:startCards, quiz:quizSetup, ports:drillSetup, order:orderSetup, prep:renderPrep})[v]();
+  window.scrollTo(0,0);
+}
+
+function chipsHTML(){
+  return '<div class="label">Sections</div><div class="chips" id="chips">' +
+    '<button class="chip" data-all="1">All</button>' +
+    SECTIONS.map(function(s){ return '<button class="chip '+(secFilter[s.id]?"on":"")+'" data-s="'+s.id+'">'+s.id+'. '+esc(s.name)+'</button>'; }).join("") + '</div>';
+}
+function wireChips(onChange){
+  Array.prototype.forEach.call($("chips").querySelectorAll(".chip"), function(c){
+    c.onclick = function(){
+      if (c.getAttribute("data-all")) {
+        var allOn = SECTIONS.every(function(s){ return secFilter[s.id]; });
+        SECTIONS.forEach(function(s){ secFilter[s.id] = !allOn; });
+      } else {
+        var id = +c.getAttribute("data-s"); secFilter[id] = !secFilter[id];
+      }
+      onChange();
+    };
+  });
+}
+
+// ---------------- HOME ----------------
+function renderHome(){
+  var known = Object.keys(S.known).filter(function(k){ return S.known[k]; }).length;
+  var prepDone = Object.keys(S.prep).filter(function(k){ return S.prep[k]==="g"; }).length;
+  var ordersDone = Object.keys(S.orders).length;
+  var missedN = Object.keys(S.missed).length;
+  $("app").innerHTML =
+   '<h2>Get ready for the test</h2><p class="sub">Pick a way to study. Your progress is saved on this computer.</p>' +
+   '<div class="panel"><div class="row" style="justify-content:space-between"><b>Flashcards mastered</b><span>'+known+' / '+CARDS.length+'</span></div><div class="bar" style="margin-top:8px"><i style="width:'+pct(known,CARDS.length)+'%"></i></div></div>' +
+   '<div class="grid">' +
+    tile("cards","📇","Flashcards", CARDS.length+" terms from all 8 sections. Flip, sort into “got it” and “still learning.”", known+" mastered") +
+    tile("quiz","✅","Practice Quiz", QUIZ.length+" multiple-choice questions with explanations. Choose your sections.", (S.bestQuiz? "Best: "+S.bestQuiz+"%":"Not taken yet") + (missedN? " · "+missedN+" to review":"")) +
+    tile("ports","⏱️","Port Drill","60-second speed round on port numbers and secure swaps.", "Best: "+S.bestDrill+" points") +
+    tile("order","🔢","Put It In Order","DORA, the TCP handshake, OSI layers, Wi-Fi encryption and more.", ordersDone+" / "+ORDERS.length+" solved") +
+    tile("prep","📝","Test Prep","The 15 practice questions from the study guide. Answer, check, and mark yourself.", prepDone+" / "+PREP.length+" correct") +
+   '</div>' +
+   '<div class="panel" style="margin-top:16px"><div class="row" style="justify-content:space-between"><span class="small">Want a fresh start?</span><button class="btn ghost" id="reset">Reset my progress</button></div></div>';
+  Array.prototype.forEach.call(document.querySelectorAll(".tile"), function(t){ t.onclick = function(){ go(t.getAttribute("data-v")); }; });
+  $("reset").onclick = function(){
+    if ($("reset").textContent.indexOf("Sure")<0) { $("reset").textContent = "Sure? Click again"; return; }
+    S = {known:{}, missed:{}, bestQuiz:null, bestDrill:0, orders:{}, prep:{}}; save(); renderHome();
+  };
+}
+function tile(v,ic,title,desc,stat){
+  return '<button class="tile" data-v="'+v+'"><div class="ic">'+ic+'</div><h3>'+title+'</h3><p>'+desc+'</p><div class="stat">'+stat+'</div></button>';
+}
+
+// ---------------- FLASHCARDS ----------------
+var deck=[], ci=0, hideKnown=false;
+function startCards(){ buildDeck(false); renderCards(); }
+function buildDeck(shuf){
+  deck = [];
+  CARDS.forEach(function(c,i){ if (secFilter[c[0]] && !(hideKnown && S.known[i])) deck.push(i); });
+  if (shuf) deck = shuffle(deck);
+  ci = 0;
+}
+function renderCards(){
+  var html = '<h2>Flashcards</h2><p class="sub">Click the card (or press <kbd>Space</kbd>) to flip. Use <kbd>←</kbd> <kbd>→</kbd> to move.</p>' + chipsHTML() +
+   '<div class="row" style="margin-bottom:6px"><button class="btn ghost" id="shuf">🔀 Shuffle</button>' +
+   '<label class="small"><input type="checkbox" id="hk" '+(hideKnown?"checked":"")+'> Hide cards I already know</label></div>';
+  if (!deck.length) {
+    html += '<div class="panel" style="text-align:center"><p><b>No cards here.</b></p><p class="small">'+(hideKnown?"You know every card in these sections! Uncheck “Hide cards I already know” to review.":"Pick at least one section.")+'</p></div>';
+    $("app").innerHTML = html; wireCardControls(); return;
+  }
+  var idx = deck[ci], c = CARDS[idx];
+  html += '<div class="flip" id="flip"><div class="inner">' +
+    '<div class="face front"><span class="tag">'+c[0]+'. '+esc(secName(c[0]))+'</span>'+(S.known[idx]?'<span class="known-badge">✓ Got it</span>':'')+'<div class="term">'+esc(c[1])+'</div><div class="hint">click to flip</div></div>' +
+    '<div class="face back"><span class="tag">'+esc(c[1])+'</span><div class="def">'+esc(c[2])+'</div><div class="hint">click to flip back</div></div>' +
+   '</div></div>' +
+   '<div class="row" style="justify-content:space-between">' +
+    '<button class="btn ghost" id="prev">← Back</button>' +
+    '<span class="small"><b>'+(ci+1)+'</b> of '+deck.length+'</span>' +
+    '<button class="btn ghost" id="next">Next →</button></div>' +
+   '<div class="row" style="justify-content:center;margin-top:14px">' +
+    '<button class="btn bad" id="learn">Still learning</button><button class="btn good" id="got">Got it ✓</button></div>';
+  $("app").innerHTML = html;
+  wireCardControls();
+  $("flip").onclick = function(){ $("flip").classList.toggle("flipped"); };
+  $("prev").onclick = function(){ ci = (ci-1+deck.length)%deck.length; renderCards(); };
+  $("next").onclick = function(){ ci = (ci+1)%deck.length; renderCards(); };
+  $("got").onclick = function(){ S.known[idx]=true; save(); advanceCard(); };
+  $("learn").onclick = function(){ delete S.known[idx]; save(); advanceCard(); };
+  document.onkeydown = function(e){
+    if (e.key===" ") { e.preventDefault(); $("flip").classList.toggle("flipped"); }
+    else if (e.key==="ArrowRight") $("next").click();
+    else if (e.key==="ArrowLeft") $("prev").click();
+  };
+}
+function advanceCard(){
+  if (hideKnown) { var keep = deck[ci]; buildDeck(false); var p = deck.indexOf(keep); ci = p>=0 ? (p+1)%Math.max(deck.length,1) : Math.min(ci, Math.max(deck.length-1,0)); }
+  else ci = (ci+1)%deck.length;
+  renderCards();
+}
+function wireCardControls(){
+  wireChips(function(){ buildDeck(false); renderCards(); });
+  $("shuf").onclick = function(){ buildDeck(true); renderCards(); };
+  $("hk").onchange = function(){ hideKnown = $("hk").checked; buildDeck(false); renderCards(); };
+}
+
+// ---------------- QUIZ ----------------
+var qset=[], qi=0, qscore=0, qmissed=[], qlen=10;
+function quizSetup(){
+  var pool = QUIZ.filter(function(q){ return secFilter[q[0]]; }).length;
+  var missedN = Object.keys(S.missed).length;
+  $("app").innerHTML = '<h2>Practice Quiz</h2><p class="sub">Questions and answer choices are shuffled every time.</p>' +
+   '<div class="panel">' + chipsHTML() +
+   '<div class="label">How many questions?</div><div class="chips" id="lens">' +
+    [10,20,"All"].map(function(n){ return '<button class="chip '+(qlen===n?"on":"")+'" data-n="'+n+'">'+n+'</button>'; }).join("") + '</div>' +
+   '<p class="small">'+pool+' questions in the sections you picked.</p>' +
+   '<div class="row"><button class="btn gold" id="go" '+(pool?"":"disabled")+'>Start quiz</button>' +
+   (missedN? '<button class="btn ghost" id="rev">Review my '+missedN+' missed question'+(missedN>1?"s":"")+'</button>':'') + '</div></div>' +
+   (S.bestQuiz!==null? '<p class="small">Your best score: <b>'+S.bestQuiz+'%</b></p>':'');
+  wireChips(quizSetup);
+  Array.prototype.forEach.call($("lens").querySelectorAll(".chip"), function(c){ c.onclick=function(){ var v=c.getAttribute("data-n"); qlen = v==="All"?"All":+v; quizSetup(); }; });
+  $("go").onclick = function(){
+    var idxs = []; QUIZ.forEach(function(q,i){ if (secFilter[q[0]]) idxs.push(i); });
+    idxs = shuffle(idxs); if (qlen!=="All") idxs = idxs.slice(0,qlen);
+    startQuiz(idxs, false);
+  };
+  if ($("rev")) $("rev").onclick = function(){ startQuiz(shuffle(Object.keys(S.missed).map(Number)), true); };
+}
+var reviewMode=false;
+function startQuiz(idxs, rev){ qset = idxs; qi=0; qscore=0; qmissed=[]; reviewMode=rev; renderQ(); }
+function renderQ(){
+  var q = QUIZ[qset[qi]];
+  var opts = shuffle([q[2]].concat(q[3]));
+  $("app").innerHTML = '<h2>'+(reviewMode?"Review missed":"Practice Quiz")+'</h2>' +
+   '<div class="row" style="justify-content:space-between"><span class="small">Question '+(qi+1)+' of '+qset.length+' · '+esc(secName(q[0]))+'</span><span class="small">Score: '+qscore+'</span></div>' +
+   '<div class="bar" style="margin:8px 0 14px"><i style="width:'+pct(qi,qset.length)+'%"></i></div>' +
+   '<div class="panel"><div class="q">'+esc(q[1])+'</div><div class="opts" id="opts">' +
+    opts.map(function(o,i){ return '<button class="opt" data-i="'+i+'">'+String.fromCharCode(65+i)+'. '+esc(o)+'</button>'; }).join("") +
+   '</div><div id="fb"></div></div>';
+  var btns = $("opts").querySelectorAll(".opt");
+  Array.prototype.forEach.call(btns, function(b){
+    b.onclick = function(){
+      var pick = opts[+b.getAttribute("data-i")], right = pick===q[2];
+      Array.prototype.forEach.call(btns, function(x){ x.disabled=true; if (opts[+x.getAttribute("data-i")]===q[2]) x.classList.add("right"); });
+      if (right) { qscore++; delete S.missed[qset[qi]]; }
+      else { b.classList.add("wrong"); qmissed.push(qset[qi]); S.missed[qset[qi]] = 1; }
+      save();
+      $("fb").innerHTML = '<div class="explain"><b>'+(right?"Correct! ":"Not quite. ")+'</b>'+esc(q[4])+'</div>' +
+        '<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="nq">'+(qi+1<qset.length?"Next →":"See results")+'</button></div>';
+      $("nq").onclick = function(){ qi++; if (qi<qset.length) renderQ(); else quizDone(); };
+      $("nq").focus();
+    };
+  });
+  document.onkeydown = function(e){ var n = "abcd".indexOf(e.key.toLowerCase()); if (n<0) n = "1234".indexOf(e.key); if (n>=0 && btns[n] && !btns[n].disabled) btns[n].click(); };
+}
+function quizDone(){
+  document.onkeydown = null;
+  var p = pct(qscore,qset.length);
+  if (!reviewMode && (S.bestQuiz===null || p>S.bestQuiz)) { S.bestQuiz = p; save(); }
+  var msg = p>=90?"Outstanding! You're ready.":p>=75?"Solid work. Review the misses below.":p>=50?"Getting there. Hit the flashcards for the sections you missed.":"Keep studying. Start with flashcards, then try again.";
+  $("app").innerHTML = '<h2>Results</h2><div class="panel" style="text-align:center"><div class="big">'+qscore+' / '+qset.length+'</div><div><b>'+p+'%</b> · '+msg+'</div>' +
+   '<div class="row" style="justify-content:center;margin-top:14px"><button class="btn gold" id="again">New quiz</button>' +
+   (qmissed.length?'<button class="btn" id="retry">Retry the '+qmissed.length+' I missed</button>':'') + '</div></div>' +
+   (qmissed.length? '<div class="panel"><b>Questions to review</b>' + qmissed.map(function(i){ var q=QUIZ[i]; return '<div class="miss">'+esc(q[1])+'<br><b>Answer: '+esc(q[2])+'</b><br><span class="small">'+esc(q[4])+'</span></div>'; }).join("") + '</div>' : '');
+  $("again").onclick = quizSetup;
+  if ($("retry")) $("retry").onclick = function(){ startQuiz(shuffle(qmissed), true); };
+}
+
+// ---------------- PORT DRILL ----------------
+var dTimer=null, dLeft=60, dScore=0, dStreak=0, dTimed=true, dAsked=0, dRight=0;
+function drillSetup(){
+  clearInterval(dTimer);
+  $("app").innerHTML = '<h2>Port Drill</h2><p class="sub">Match ports, protocols and secure replacements as fast as you can. Streaks of 3+ earn bonus points.</p>' +
+   '<div class="panel"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
+   '<tr style="text-align:left;color:var(--muted)"><th style="padding:4px">Port</th><th>Protocol</th><th>Does</th><th>TCP/UDP</th></tr>' +
+   PORTS.map(function(p){ return '<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px"><b>'+p.p+'</b></td><td>'+p.n+'</td><td>'+p.d+'</td><td>'+p.tu+'</td></tr>'; }).join("") +
+   '</table><p class="small" style="margin-top:10px">Study the table, then start. It disappears during the drill!</p>' +
+   '<div class="row"><button class="btn gold" id="timed">Start 60-second drill</button><button class="btn ghost" id="prac">Practice (no timer)</button></div></div>' +
+   '<p class="small">Your best: <b>'+S.bestDrill+'</b> points</p>';
+  $("timed").onclick = function(){ startDrill(true); };
+  $("prac").onclick = function(){ startDrill(false); };
+}
+function startDrill(timed){
+  dTimed=timed; dLeft=60; dScore=0; dStreak=0; dAsked=0; dRight=0;
+  clearInterval(dTimer);
+  if (timed) dTimer = setInterval(function(){ dLeft--; var t=$("tm"); if (t) t.textContent = dLeft+"s"; if (dLeft<=0) { clearInterval(dTimer); drillDone(); } }, 1000);
+  drillQ();
+}
+function makeDrillQ(){
+  var t = Math.floor(Math.random()*4), p, others, opts;
+  if (t===3) {
+    var ins = PORTS.filter(function(x){ return x.rep; }); p = ins[Math.floor(Math.random()*ins.length)];
+    opts = shuffle([p.rep, "Telnet (23)", "FTP (21)", "HTTP (80)", "RDP (3389)", "SMTP (25)"].filter(function(o,i,a){ return a.indexOf(o)===i; }).filter(function(o){ return o!==p.rep; })).slice(0,3).concat([p.rep]);
+    return {q:"What is the SECURE replacement for <b>"+p.n+"</b> (port "+p.p+")?", a:p.rep, opts:shuffle(opts)};
+  }
+  p = PORTS[Math.floor(Math.random()*PORTS.length)];
+  others = shuffle(PORTS.filter(function(x){ return x!==p && !(x.n.indexOf("POP3")>=0 && p.n.indexOf("IMAP")>=0) && !(p.n.indexOf("POP3")>=0 && x.n.indexOf("IMAP")>=0); })).slice(0,3);
+  if (t===0) return {q:"Which port does <b>"+p.n+"</b> use?", a:p.p, opts:shuffle([p.p].concat(others.map(function(x){return x.p;})))};
+  if (t===1) return {q:"Port <b>"+p.p+"</b> is used by…", a:p.n, opts:shuffle([p.n].concat(others.map(function(x){return x.n;})))};
+  return {q:"Which protocol is used for <b>"+p.d+"</b>?", a:p.n, opts:shuffle([p.n].concat(others.map(function(x){return x.n;})))};
+}
+var dq=null;
+function drillQ(){
+  dq = makeDrillQ();
+  $("app").innerHTML = '<h2>Port Drill</h2><div class="row" style="justify-content:space-between">' +
+   (dTimed?'<span class="timer" id="tm">'+dLeft+'s</span>':'<span class="small">Practice mode</span>') +
+   '<span><b id="sc">'+dScore+'</b> pts · streak <b>'+dStreak+'</b></span></div>' +
+   '<div class="panel" style="margin-top:12px" id="dp"><div class="q">'+dq.q+'</div><div class="opts" id="opts">' +
+   dq.opts.map(function(o,i){ return '<button class="opt" data-i="'+i+'">'+String.fromCharCode(65+i)+'. '+esc(o)+'</button>'; }).join("") + '</div><div id="fb"></div></div>' +
+   '<div class="row" style="justify-content:flex-end"><button class="btn ghost" id="stop">'+(dTimed?"Quit":"Finish")+'</button></div>';
+  var btns = $("opts").querySelectorAll(".opt");
+  Array.prototype.forEach.call(btns, function(b){
+    b.onclick = function(){
+      var pick = dq.opts[+b.getAttribute("data-i")]; dAsked++;
+      Array.prototype.forEach.call(btns, function(x){ x.disabled=true; if (dq.opts[+x.getAttribute("data-i")]===dq.a) x.classList.add("right"); });
+      if (pick===dq.a) { dRight++; dStreak++; dScore += 10 + (dStreak>=3?5:0); $("dp").classList.add("pop"); setTimeout(drillQ, 350); }
+      else { dStreak=0; b.classList.add("wrong"); $("dp").classList.add("shake"); setTimeout(drillQ, 1100); }
+    };
+  });
+  document.onkeydown = function(e){ var n = "abcd".indexOf(e.key.toLowerCase()); if (n<0) n="1234".indexOf(e.key); if (n>=0 && btns[n] && !btns[n].disabled) btns[n].click(); };
+  $("stop").onclick = function(){ clearInterval(dTimer); if (dTimed) drillSetup(); else drillDone(); };
+}
+function drillDone(){
+  document.onkeydown = null;
+  var nb = dTimed && dScore > S.bestDrill; if (nb) { S.bestDrill = dScore; save(); }
+  $("app").innerHTML = '<h2>Port Drill</h2><div class="panel" style="text-align:center">' + (dTimed?'<div class="label">Time!</div>':'') +
+   '<div class="big">'+dScore+' pts</div><div>'+dRight+' of '+dAsked+' correct'+(nb?' · <b>New best!</b> 🏆':'')+'</div>' +
+   '<div class="row" style="justify-content:center;margin-top:14px"><button class="btn gold" id="ag">Play again</button><button class="btn ghost" id="bk">Back to port table</button></div></div>';
+  $("ag").onclick = function(){ startDrill(dTimed); };
+  $("bk").onclick = drillSetup;
+}
+
+// ---------------- ORDER ----------------
+var oCur=null, oPos=0, oMist=0, oPool=[];
+function orderSetup(){
+  $("app").innerHTML = '<h2>Put It In Order</h2><p class="sub">Tap the items in the correct order. A wrong tap shakes and counts as a mistake.</p><div class="grid">' +
+   ORDERS.map(function(o){ var s=S.orders[o.id]; return '<button class="tile" data-o="'+o.id+'"><h3>'+esc(o.name)+'</h3><p>'+o.items.length+' items</p><div class="stat">'+(s===undefined?"Not solved yet":(s===0?"⭐ Perfect!":"Solved · best "+s+" mistake"+(s>1?"s":"")))+'</div></button>'; }).join("") + '</div>';
+  Array.prototype.forEach.call(document.querySelectorAll(".tile"), function(t){ t.onclick = function(){ startOrder(t.getAttribute("data-o")); }; });
+}
+function startOrder(id){
+  oCur = ORDERS.filter(function(o){ return o.id===id; })[0]; oPos=0; oMist=0;
+  oPool = shuffle(oCur.items.map(function(_,i){ return i; }));
+  renderOrder();
+}
+function renderOrder(){
+  var done = oPos===oCur.items.length;
+  $("app").innerHTML = '<h2>'+esc(oCur.name)+'</h2><p class="sub">'+esc(oCur.prompt)+'</p>' +
+   '<div class="panel"><div class="slots">' + oCur.items.map(function(it,i){ return '<div class="slot '+(i<oPos?"filled":"")+'"><span class="n">'+(i+1)+'</span>'+(i<oPos?esc(it):"")+'</div>'; }).join("") + '</div>' +
+   (done ? '<div class="explain"><b>'+(oMist===0?"Perfect! ⭐":"Solved!")+'</b> '+oMist+' mistake'+(oMist===1?"":"s")+'.</div><div class="row" style="margin-top:12px"><button class="btn gold" id="again">Try again</button><button class="btn ghost" id="back">All puzzles</button></div>'
+    : '<div class="label" style="margin-bottom:8px">Tap item #'+(oPos+1)+'</div><div class="pool" id="pool">' + oPool.map(function(i){ return '<button class="opt" data-i="'+i+'">'+esc(oCur.items[i])+'</button>'; }).join("") + '</div><p class="small" id="om" style="margin-top:10px">Mistakes: '+oMist+'</p>') +
+   '</div>' + (done?'':'<button class="btn ghost" id="back">← All puzzles</button>');
+  $("back").onclick = orderSetup;
+  if (done) {
+    var prev = S.orders[oCur.id]; if (prev===undefined || oMist<prev) { S.orders[oCur.id]=oMist; save(); }
+    $("again").onclick = function(){ startOrder(oCur.id); };
+    return;
+  }
+  Array.prototype.forEach.call($("pool").querySelectorAll(".opt"), function(b){
+    b.onclick = function(){
+      var i = +b.getAttribute("data-i");
+      if (i===oPos) { oPool.splice(oPool.indexOf(i),1); oPos++; renderOrder(); }
+      else { oMist++; b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake","wrong"); setTimeout(function(){ b.classList.remove("wrong"); }, 500); $("om").textContent = "Mistakes: "+oMist; }
+    };
+  });
+}
+
+// ---------------- PREP ----------------
+function renderPrep(){
+  var g = 0, b = 0; for (var k in S.prep) { if (S.prep[k]==="g") g++; else if (S.prep[k]==="b") b++; }
+  $("app").innerHTML = '<h2>Test Prep</h2><p class="sub">The 15 practice questions from the study guide. Answer in your head or on paper first, then check and mark yourself honestly.</p>' +
+   '<div class="panel"><div class="row" style="justify-content:space-between"><span><b>'+g+'</b> correct · <b>'+b+'</b> to review · '+(PREP.length-g-b)+' not checked</span><button class="btn ghost" id="clr">Clear marks</button></div><div class="bar" style="margin-top:8px"><i style="width:'+pct(g,PREP.length)+'%"></i></div></div>' +
+   '<div class="panel">' + PREP.map(function(p,i){
+     var m = S.prep[i];
+     return '<div class="prep-item"><div><b>'+(i+1)+'.</b> '+p[0]+(m==="g"?'<span class="mark g">✓ Got it</span>':m==="b"?'<span class="mark b">↻ Review</span>':'')+'</div>' +
+      '<div id="a'+i+'" style="display:none"><div class="ans">'+p[1]+'</div><div class="row" style="margin-top:8px"><button class="btn good" data-g="'+i+'">I got it right</button><button class="btn bad" data-b="'+i+'">I missed it</button></div></div>' +
+      '<button class="btn ghost" data-show="'+i+'" style="margin-top:8px">Show answer</button></div>';
+   }).join("") + '</div>';
+  Array.prototype.forEach.call(document.querySelectorAll("[data-show]"), function(btn){ btn.onclick = function(){ var i=btn.getAttribute("data-show"); $("a"+i).style.display="block"; btn.style.display="none"; }; });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-g]"), function(btn){ btn.onclick = function(){ S.prep[btn.getAttribute("data-g")]="g"; save(); var y=window.scrollY; renderPrep(); window.scrollTo(0,y); }; });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-b]"), function(btn){ btn.onclick = function(){ S.prep[btn.getAttribute("data-b")]="b"; save(); var y=window.scrollY; renderPrep(); window.scrollTo(0,y); }; });
+  $("clr").onclick = function(){ S.prep = {}; save(); renderPrep(); };
+}
+
+// ---------------- START ----------------
+var startV = (location.hash||"").replace("#","");
+go(TABS.some(function(t){ return t[0]===startV; }) ? startV : "home");
+</script>
+</body>
+</html>
